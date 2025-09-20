@@ -1,0 +1,35 @@
+use std::{env, fs, path::{Path, PathBuf}};
+
+mod file_handling;
+use file_handling::{get_files_to_move, move_listed_files};
+
+fn main() {
+    println!("Move Except");
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("Well give something to check brother");
+        return;
+    }
+
+    let move_into_str : &str = &args[1];
+    //let new_path = Path::new(&args[2]);
+    let move_into_path  = Path::new(move_into_str);
+    //println!("{}", move_into_path == new_path);
+    
+    let current_path = "*";
+    
+    //let mut files_to_move: Vec<PathBuf> = vec![];
+    let files_to_move: Vec<PathBuf> = match move_into_path.is_dir() {
+        true => get_files_to_move(current_path, Some(move_into_path)),
+        false => {
+            let files_to_move = get_files_to_move(current_path, None);
+            match fs::create_dir(move_into_path) {
+                Ok(_) => {},
+                Err(e) => panic!("Error Creating the directory {}", e),
+            }
+
+            files_to_move
+        },
+    };
+    move_listed_files(files_to_move, move_into_path);
+}
