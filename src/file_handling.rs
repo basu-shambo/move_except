@@ -21,7 +21,7 @@ pub fn get_files_to_move(glob_str:&str, excluded_path: Option<&Path>) -> Vec<Pat
     //let pwd: &Path = env::current_dir();
     //println!("{}", pwd.display());
     let vec = if let Some(excluded_path) = excluded_path {
-        println!("{:?}", excluded_path);
+        //println!("{:?}", excluded_path);
         glob(glob_str)
             .expect("Failed to read glob pattern")
             .filter_map(|e| {
@@ -45,7 +45,7 @@ pub fn get_files_to_move(glob_str:&str, excluded_path: Option<&Path>) -> Vec<Pat
 
 
     };
-    println!("{:#?}", vec);
+    //println!("{:#?}", vec);
     return vec;
 }
 
