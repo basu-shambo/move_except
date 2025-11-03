@@ -7,6 +7,7 @@ mod args_parse;
 use args_parse::{CLIArgs};
 
 mod logging;
+
 fn main() {
     let args_vec: Vec<String> = env::args().collect();
     let args_rep : CLIArgs = CLIArgs::new(args_vec.clone());
