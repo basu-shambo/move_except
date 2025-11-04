@@ -7,16 +7,17 @@ mod args_parse;
 use args_parse::{CLIArgs};
 
 mod logging;
+use logging::{Logger, Level, help_str};
 
 fn main() {
     let args_vec: Vec<String> = env::args().collect();
     let args_rep : CLIArgs = CLIArgs::new(args_vec.clone());
     println!("{:?}", args_rep);
     if args_vec.len() < 2 {
-        println!("Well give something to check brother");
+        Logger::with_stdout(Level::Info).error("This isn't correct usage\n").info(help_str()).log();
         return;
     }
-    #[cfg(not(feature))] {
+
     let move_into_str : &str = &args_vec[1];
     //let new_path = Path::new(&args_vec[2]);
     let move_into_path  = Path::new(move_into_str);
@@ -38,5 +39,4 @@ fn main() {
         },
     };
     //move_listed_files(files_to_move, move_into_path);
-    }
 }

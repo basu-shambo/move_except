@@ -13,7 +13,7 @@ pub enum Level {
 }
 
 
-struct Logger< Writable: Write> {
+pub struct Logger< Writable: Write> {
     writer : Writable,
     log_level: Level,
     lower: bool, // This is meant to tell if the lower logs needs to printed or not.
@@ -21,7 +21,7 @@ struct Logger< Writable: Write> {
 }
 
 impl Logger<std::io::Stdout> {
-    fn with_stdout(level: Level) -> Self {
+    pub fn with_stdout(level: Level) -> Self {
         return Logger {
             writer: std::io::stdout(),
             log_level: level,
@@ -32,7 +32,7 @@ impl Logger<std::io::Stdout> {
 }
 
 impl<Writable: Write> Logger<Writable> {
-    fn with(level:Level, writer: Writable) -> Self {
+    pub fn with(level:Level, writer: Writable) -> Self {
         return Logger {
             writer: writer,
             log_level:level,
@@ -53,29 +53,47 @@ impl<Writable: Write> Logger<Writable> {
             }
         }
     }
-    fn log(self) {
+    pub fn log(self) {
         self.make_final_print();
     }
-    fn only(mut self) -> Self {
+    pub fn only(mut self) -> Self {
         self.lower = false;
         return self;
     }
-    fn error(mut self, log: &str) -> Self {
+    pub fn error(mut self, log: &str) -> Self {
         self.conditionally_print_log(log, Level::Error);
         return self;
     } 
-    fn warn(mut self, log: &str) -> Self {
+    pub fn warn(mut self, log: &str) -> Self {
         self.conditionally_print_log(log, Level::Warn);
         return self;
     }
-    fn info(mut self, log: &str) -> Self {
+    pub fn info(mut self, log: &str) -> Self {
         self.conditionally_print_log(log, Level::Info);
         return self;
     }
-    fn debug(mut self, log: &str) -> Self {
+    pub fn debug(mut self, log: &str) -> Self {
         self.conditionally_print_log(log, Level::Debug);
         return self;
     }
 } 
 
+pub fn help_str() -> &'static str {
+    return 
+        "\
+    move_except - Move or copy files with optional exclusions
 
+    USAGE:
+        mve [options] <files_to_move> <destination> [-e, --exclude <files_or_folders_to_exclude>]
+
+    OPTIONS:
+        -c, --copy        Copy files instead of moving them
+        -h, --help        Show this help message and exit
+        -v, --verbose     Print whats going on 
+
+    EXAMPLES:
+        mve file1.txt file2.txt /backup/
+        mve -c src/*.rs /tmp/
+        mve dir1 dir2 --exclude node_modules .git
+    ";
+}
