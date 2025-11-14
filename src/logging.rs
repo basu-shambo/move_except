@@ -4,7 +4,7 @@ use std::io::Write;
 mod tests;
 
 #[repr(u8)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Level {
     Error,
     Warn,
@@ -96,4 +96,8 @@ pub fn help_str() -> &'static str {
         mve -c src/*.rs /tmp/
         mve dir1 dir2 --exclude node_modules .git
     ";
+}
+
+pub fn log_incorrect_usage() {
+    return Logger::with_stdout(Level::Info).error("This isn't the correct usage\n").info(help_str()).log();
 }
