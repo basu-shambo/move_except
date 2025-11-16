@@ -7,7 +7,7 @@ mod args_parse;
 use args_parse::{CLIArgs};
 
 mod logging;
-//use logging::{Logger, Level, log_incorrect_usage, help_str};
+//use logging::{Logger, Level, log_incorrect_usage, get_help_str};
 
 fn main() {
     let args_vec: Vec<String> = env::args().collect();

@@ -78,7 +78,7 @@ impl<Writable: Write> Logger<Writable> {
     }
 } 
 
-pub fn help_str() -> &'static str {
+pub fn get_help_str() -> &'static str {
     return 
         "\
     move_except - Move or copy files with optional exclusions
@@ -98,6 +98,12 @@ pub fn help_str() -> &'static str {
     ";
 }
 
-pub fn log_incorrect_usage() {
-    return Logger::with_stdout(Level::Info).error("This isn't the correct usage\n").info(help_str()).log();
+pub fn log_incorrect_usage(maybe_pre_log:Option<Logger<std::io::Stdout>>) {
+    match maybe_pre_log {
+        Some(pre_log) => {
+            pre_log.log();
+            Logger::with_stdout(Level::Info).info(get_help_str()).log();
+        },
+        None => Logger::with_stdout(Level::Info).error("This is incorrect usage").info(get_help_str()).log()
+    }
 }

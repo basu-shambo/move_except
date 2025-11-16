@@ -9,3 +9,5 @@ fn test_simple_parsing() {
     let parsed_args: CLIArgs = CLIArgs::from(input_args);
     assert_eq!(parsed_args, CLIArgs::new());
 }
+
+
