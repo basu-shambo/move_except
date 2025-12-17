@@ -1,9 +1,18 @@
 use std::path::PathBuf;
+use std::fmt;
 
 use crate::logging::{Level, Logger, log_incorrect_usage, get_help_str};
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Debug, PartialEq)]
+pub enum ArgsParseError {
+    NotEnoughArgs,
+    HelpRequested,
+    NotEnoughPaths,
+    IncorrectOption(String),
+}
 
 #[derive(Debug, PartialEq)]
 pub struct CLIArgs {
@@ -14,6 +23,17 @@ pub struct CLIArgs {
     files_to_move: Vec<PathBuf>,
     files_to_exclude: Vec<PathBuf>,
 
+}
+
+impl fmt::Display for ArgsParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ArgsParseError::NotEnoughArgs => write!(f, "Not enough arguments provided."),
+            ArgsParseError::HelpRequested => write!(f, "Help requested."),
+            ArgsParseError::NotEnoughPaths => write!(f, "Not enough paths provided."),
+            ArgsParseError::IncorrectOption(option) => write!(f, "Incorrect option: {}", option),
+        }
+    }
 }
 
 impl CLIArgs {
@@ -27,40 +47,10 @@ impl CLIArgs {
             files_to_exclude : Vec::<PathBuf>::new()
         };
     }
-    pub fn update_options( &mut self, options: Vec<String>) {
-        for option in options {
-            if option.starts_with('-') && !option.starts_with("--") {
-                for a in option.trim_start_matches('-').chars() {
-                    match a {
-                        'h' => self.print_help = true,
-                        'c' => self.copy_instead = true,
-                        'v' => self.verbosity = Level::Debug,
-                        _ => { Logger::with_stdout(Level::Debug).info(&format!("{a} is a wrong, ignoring {a}")).log();}
-                    }; 
-                }
-            }
-            else if option.starts_with("--") {
-                todo!();
-            }
-            else {
-                panic!("{}",format!("This shouldn't be possible -> {option}"));
-            }
-            
-        }
-    }
-    pub fn update_paths(&mut self, paths: Vec<String>) {
-        if paths.len() < 2 {
-            log_incorrect_usage(Some(Logger::with_stdout(Level::Error).error("Provide the correct Paths")));
-        }
-        let mut path_bufs: Vec<PathBuf> = paths.into_iter().map(|path| PathBuf::from(path)).collect();
-        self.destination = path_bufs.pop().unwrap();
-        self.files_to_move = path_bufs; 
-    }
 
-    pub fn from(args_vec:Vec<String>) -> Self {
+    pub fn from(args_vec:Vec<String>) -> Result<Self, ArgsParseError> {
         if args_vec.len() < 2 {
-            log_incorrect_usage(None);
-            std::process::exit(1);
+            return Err(ArgsParseError::NotEnoughArgs);
         }
         let mut new_object : Self = Self::new();
         let mut args_iter = args_vec.into_iter().skip(1).peekable();
@@ -70,14 +60,51 @@ impl CLIArgs {
         }
         let paths:Vec<String> = args_iter.collect();
 
-        println!("{:?}", options);
-        println!("{:?}", paths);
-        new_object.update_options(options);
-        if new_object.print_help {
-            Logger::with_stdout(Level::Info).info(get_help_str()).log();
-            std::process::exit(1);
+        let option_updated_object = new_object.update_options(options);
+        if let Ok(val) = &option_updated_object && val.print_help  {
+            return Err(ArgsParseError::HelpRequested);
         }
-        new_object.update_paths(paths);
-        return new_object;
+        let path_updated_object = option_updated_object?.update_paths(paths);
+        return path_updated_object;
     }
+
+    pub fn update_options(mut self, options: Vec<String>) -> Result<Self, ArgsParseError> {
+        for option in options {
+            if option.starts_with('-') && !option.starts_with("--") {
+                for a in option.trim_start_matches('-').chars() {
+                    match a {
+                        'h' => self.print_help = true, // this should actually return the HelpRequested error, but keeping it for now
+                        'c' => self.copy_instead = true,
+                        'v' => self.verbosity = Level::Debug,
+                        _ => return Err(ArgsParseError::IncorrectOption(a.to_string())), 
+                    }; 
+                }
+            }
+            else if option.starts_with("--") {
+                let trimmed_option = option.trim_start_matches("--");
+                match trimmed_option {
+                    "help" => self.print_help = true,
+                    "copy" => self.copy_instead = true,
+                    "verbose" => self.verbosity = Level::Debug,
+                    _ => return Err(ArgsParseError::IncorrectOption(trimmed_option.to_string())),
+                }
+            }
+            else {
+                panic!("{}",format!("This shouldn't be possible -> {option}"));
+            }
+            
+        }
+        return Ok(self);
+    }
+
+    pub fn update_paths(mut self, paths: Vec<String>) -> Result<Self, ArgsParseError> {
+        if paths.len() < 2 {
+            return Err(ArgsParseError::NotEnoughPaths);
+        }
+        let mut path_bufs: Vec<PathBuf> = paths.into_iter().map(|path| PathBuf::from(path)).collect();
+        self.destination = path_bufs.pop().unwrap();
+        self.files_to_move = path_bufs; 
+        return Ok(self);
+    }
+
 } 

@@ -11,7 +11,7 @@ mod logging;
 
 fn main() {
     let args_vec: Vec<String> = env::args().collect();
-    let args_rep : CLIArgs = CLIArgs::from(args_vec.clone());
+    let args_rep : CLIArgs = CLIArgs::from(args_vec.clone()).expect("REASON");
     println!("{:?}", args_rep);
 
     return;

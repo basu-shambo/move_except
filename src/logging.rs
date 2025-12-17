@@ -3,6 +3,10 @@ use std::io::Write;
 #[cfg(test)]
 mod tests;
 
+const RED: &str = "\x1b[31m";
+const YELLOW: &str = "\x1b[33m";
+const RESET: &str = "\x1b[0m";
+
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Level {
@@ -61,11 +65,13 @@ impl<Writable: Write> Logger<Writable> {
         return self;
     }
     pub fn error(mut self, log: &str) -> Self {
-        self.conditionally_print_log(log, Level::Error);
+        let coloured_error_log  = format!("{RED}ERROR: {log}{RESET}");
+        self.conditionally_print_log(&coloured_error_log, Level::Error);
         return self;
     } 
     pub fn warn(mut self, log: &str) -> Self {
-        self.conditionally_print_log(log, Level::Warn);
+        let coloured_warn_log = format!("{YELLOW}WARN: {log}{RESET}");
+        self.conditionally_print_log(&coloured_warn_log, Level::Warn);
         return self;
     }
     pub fn info(mut self, log: &str) -> Self {
@@ -104,6 +110,6 @@ pub fn log_incorrect_usage(maybe_pre_log:Option<Logger<std::io::Stdout>>) {
             pre_log.log();
             Logger::with_stdout(Level::Info).info(get_help_str()).log();
         },
-        None => Logger::with_stdout(Level::Info).error("This is incorrect usage").info(get_help_str()).log()
+        None => Logger::with_stdout(Level::Info).error("This is incorrect usage\n").info(get_help_str()).log()
     }
 }
