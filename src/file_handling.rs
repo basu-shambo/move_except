@@ -17,19 +17,23 @@ impl ToAbsolutePath for Path {
         }
     }
 }
-pub fn get_files_to_move(glob_str:&str, excluded_path: Option<&Path>) -> Vec<PathBuf> {
-    //let pwd: &Path = env::current_dir();
-    //println!("{}", pwd.display());
+
+impl ToAbsolutePath for &PathBuf {
+    fn to_absolute_path(&self) -> Cow<Path> {
+        return self.as_path().to_absolute_path();
+    }
+}
+
+pub fn get_files_to_move(glob_str:&str, excluded_path: Option<&Vec<PathBuf>>) -> Vec<PathBuf> {
     let vec = if let Some(excluded_path) = excluded_path {
-        //println!("{:?}", excluded_path);
         glob(glob_str)
             .expect("Failed to read glob pattern")
             .filter_map(|e| {
                 e.ok().and_then(|pathbuf| {
-                    if pathbuf.to_absolute_path() == excluded_path.to_absolute_path() {
+                    if pathbuf.to_absolute_path() == excluded_path[0].to_absolute_path() {
                         None
                     }
-                    else {
+else {
                         Some(pathbuf)
                     }
                 })
@@ -45,7 +49,6 @@ pub fn get_files_to_move(glob_str:&str, excluded_path: Option<&Path>) -> Vec<Pat
 
 
     };
-    //println!("{:#?}", vec);
     return vec;
 }
 
@@ -59,3 +62,22 @@ pub fn move_listed_files(files_to_move:Vec<PathBuf>, into_path:&Path) {
     }    
 }
 
+pub fn handle_file_movement(files_to_move:&Vec<PathBuf>, destination:&PathBuf, files_to_exclude:&Vec<PathBuf>) {
+    //Check if the destination exists otherwise make the directory
+    match destination.is_dir() {
+        false => match std::fs::create_dir(destination) {
+            Ok(_)=> {},
+            Err(e) => panic!("Error Create the directory {}\n", e),
+        },
+        true => {},
+    };
+    println!("{:?}", files_to_move );
+
+    //Get the input paths and then check if the glob matches
+    //1. Expand the glob into path and check which files match it and collect into a vector
+
+    //2. expand the files_to_exclude and check which files matches it and then collect it into a vector
+
+    //3. remove the files in the exclude_list from the files_to_move
+    
+}
