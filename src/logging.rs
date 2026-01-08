@@ -13,12 +13,11 @@ pub enum Level {
     Error,
     Warn,
     Info,
-    Debug
+    Debug,
 }
 
-
-pub struct Logger< Writable: Write> {
-    writer : Writable,
+pub struct Logger<Writable: Write> {
+    writer: Writable,
     log_level: Level,
     lower: bool, // This is meant to tell if the lower logs needs to printed or not.
     print_string: Option<String>,
@@ -30,28 +29,28 @@ impl Logger<std::io::Stdout> {
             writer: std::io::stdout(),
             log_level: level,
             lower: true,
-            print_string: None
+            print_string: None,
         };
     }
 }
 
 impl<Writable: Write> Logger<Writable> {
-    pub fn with(level:Level, writer: Writable) -> Self {
+    pub fn with(level: Level, writer: Writable) -> Self {
         return Logger {
             writer: writer,
-            log_level:level,
-            lower:true,
-            print_string: None
+            log_level: level,
+            lower: true,
+            print_string: None,
         };
     }
-    fn conditionally_print_log(&mut self, log: &str, curr_level:Level) {
-        if (curr_level == self.log_level) || (self.lower &&  (curr_level < self.log_level)) {
+    fn conditionally_print_log(&mut self, log: &str, curr_level: Level) {
+        if (curr_level == self.log_level) || (self.lower && (curr_level < self.log_level)) {
             self.print_string.get_or_insert(String::new()).push_str(log);
         }
     }
     fn make_final_print(mut self) {
-        if let Some(log) = &self.print_string{
-            let write_out = writeln!(self.writer,"{}",log);
+        if let Some(log) = &self.print_string {
+            let write_out = writeln!(self.writer, "{}", log);
             if let Err(_o) = write_out {
                 panic!("Absolute Idiocy, can't even write to memory");
             }
@@ -65,10 +64,10 @@ impl<Writable: Write> Logger<Writable> {
         return self;
     }
     pub fn error(mut self, log: &str) -> Self {
-        let coloured_error_log  = format!("{RED}ERROR: {log}{RESET}");
+        let coloured_error_log = format!("{RED}ERROR: {log}{RESET}");
         self.conditionally_print_log(&coloured_error_log, Level::Error);
         return self;
-    } 
+    }
     pub fn warn(mut self, log: &str) -> Self {
         let coloured_warn_log = format!("{YELLOW}WARN: {log}{RESET}");
         self.conditionally_print_log(&coloured_warn_log, Level::Warn);
@@ -82,11 +81,10 @@ impl<Writable: Write> Logger<Writable> {
         self.conditionally_print_log(log, Level::Debug);
         return self;
     }
-} 
+}
 
 pub fn get_help_str() -> &'static str {
-    return 
-        "\
+    return "\
     move_except - Move or copy files with optional exclusions
 
     USAGE:
@@ -104,12 +102,15 @@ pub fn get_help_str() -> &'static str {
     ";
 }
 
-pub fn log_incorrect_usage(maybe_pre_log:Option<Logger<std::io::Stdout>>) {
-    match maybe_pre_log {
-        Some(pre_log) => {
-            pre_log.log();
-            Logger::with_stdout(Level::Info).info(get_help_str()).log();
-        },
-        None => Logger::with_stdout(Level::Info).error("This is incorrect usage\n").info(get_help_str()).log()
-    }
-}
+//pub fn log_incorrect_usage(maybe_pre_log: Option<Logger<std::io::Stdout>>) {
+//    match maybe_pre_log {
+//        Some(pre_log) => {
+//            pre_log.log();
+//            Logger::with_stdout(Level::Info).info(get_help_str()).log();
+//        }
+//        None => Logger::with_stdout(Level::Info)
+//            .error("This is incorrect usage\n")
+//            .info(get_help_str())
+//            .log(),
+//    }
+//}
