@@ -1,10 +1,7 @@
 use glob::glob;
-use std::{
-    borrow::Cow,
-    env,
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
+use std::{ borrow::Cow, env, path::{Path, PathBuf}, collections::HashSet};
+
+use crate::logging::{Logger, Level};
 
 trait ToAbsolutePath {
     fn to_absolute_path(&self) -> Cow<Path>;
@@ -32,25 +29,7 @@ impl ToAbsolutePath for &PathBuf {
     }
 }
 
-pub fn get_files_to_move_and_destination(files_to_move: Vec<PathBuf>, files_to_exclude: Vec<PathBuf>, destination: &String) -> (Vec<PathBuf>, PathBuf) {
-    let absolute_paths_to_move: Vec<PathBuf> = files_to_move
-        .into_iter()
-        .map(|s| s.to_absolute_path().into_owned())
-        .collect();
-
-    let absolute_path_to_exclude: Vec<PathBuf> = files_to_exclude
-        .into_iter()
-        .map(|s| s.to_absolute_path().into_owned())
-        .collect();
-
-    let destination: PathBuf = Path::new(&destination).to_absolute_path().into_owned();
-
-    let exclude_set : HashSet<PathBuf> = absolute_path_to_exclude.into_iter().collect(); 
-    let filtered_paths_to_move : Vec<PathBuf> = absolute_paths_to_move.into_iter().filter(|s| !exclude_set.contains(s)).collect();
-    return (filtered_paths_to_move, destination);
-}
-
-pub fn get_files_from_glob(glob_str: &str, excluded_path: Option<&Vec<PathBuf>>) -> Vec<PathBuf> {
+fn get_files_from_glob(glob_str: &str, excluded_path: Option<&Vec<PathBuf>>) -> Vec<PathBuf> {
     let vec = if let Some(excluded_path) = excluded_path {
         glob(glob_str)
             .expect("Failed to read glob pattern")
@@ -82,35 +61,48 @@ pub fn create_files_from_input_globs(input_globs: Vec<String>) -> Vec<PathBuf> {
     return paths_from_globs;
 }
 
-pub fn move_listed_files(files_to_move: Vec<PathBuf>, into_path: &Path) {
+pub fn move_listed_files(files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
     for file in files_to_move {
-        let new_dest = into_path.join(file.file_name().unwrap());
-        match std::fs::rename(&file, &new_dest) {
-            Ok(_) => {}
-            Err(e) => println!("Error moving file from {} -> {}", file.display(), e),
+        match std::fs::rename(&file, &destination) {
+            Ok(_) => {
+                Logger::with_stdout(log_level).debug(&format!("Moving file {} -> {}",file.display(), destination.display())).log();
+
+            }
+            Err(e) => {
+                Logger::with_stdout(log_level).error(&format!("Error moving {}. {}", file.display(), e)).log();
+            }
         }
     }
 }
 
-pub fn handle_file_movement(
-    files_to_move: &Vec<PathBuf>,
-    destination: &PathBuf,
-    files_to_exclude: &Vec<PathBuf>,
-) {
+pub fn get_files_to_move_and_destination(files_to_move: Vec<PathBuf>, files_to_exclude: Vec<PathBuf>, destination: String) -> (Vec<PathBuf>, PathBuf) {
+    let absolute_paths_to_move = files_to_move.into_iter().map(|s| s.to_absolute_path().into_owned());
+
+    let exclusion_set: HashSet<PathBuf> =files_to_exclude.into_iter().map(|s| s.to_absolute_path().into_owned()).collect();
+
+    let filtered_absolute_paths_to_move: Vec<PathBuf> = absolute_paths_to_move.into_iter().filter(|b| !exclusion_set.contains(b)).collect();
+
+    let absolute_dest_path : PathBuf = PathBuf::from(destination.as_str());
+    return (filtered_absolute_paths_to_move, absolute_dest_path);
+}
+
+pub fn handle_file_movement( files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
     //Check if the destination exists otherwise make the directory
     match destination.is_dir() {
-        false => match std::fs::create_dir(destination) {
-            Ok(_) => {}
-            Err(e) => panic!("Error Create the directory {}\n", e),
+        false => match std::fs::create_dir(&destination) {
+            Ok(_) => {
+                Logger::with_stdout(log_level).info(&format!("{} Created!",destination.display())).log();
+            }
+            Err(e) => {
+                Logger::with_stdout(log_level).error(&format!("{} Can't be created.\n {}", destination.display(), e)).log();
+                return;
+            } 
         },
-        true => {}
+        true => {
+            Logger::with_stdout(log_level).info(&format!("{} Already Present!", destination.display())).log();
+        }
     };
-    println!("{:?}", files_to_move);
+    
+    move_listed_files(files_to_move, destination, log_level);
 
-    //Get the input paths and then check if the glob matches
-    //1. Expand the glob into path and check which files match it and collect into a vector
-
-    //2. expand the files_to_exclude and check which files matches it and then collect it into a vector
-
-    //3. remove the files in the exclude_list from the files_to_move
 }
