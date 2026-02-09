@@ -1,13 +1,12 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::path::Path;
 
 mod shared;
-use shared::{compute_hash, create_test_setup};
+use shared::{compute_hash, create_simple_test_setup, remove_dirs};
 
 #[test]
 fn test_move_except_single_file() {
-    let setup = create_test_setup().expect("Failed to create test setup");
+    let setup = create_simple_test_setup(vec!["file1", "file2", "file3"]).expect("Failed to create test setup");
     let source_dir_str = setup.source_dir.to_str().unwrap();
     let dest_dir_str = setup.dest_dir.to_str().unwrap();
 
@@ -45,4 +44,6 @@ fn test_move_except_single_file() {
     let original_hash_file3 = &setup.files.iter().find(|(p, _)| p.ends_with("file3.tmp")).unwrap().1;
     let moved_hash_file3 = compute_hash(&moved_file3_path).unwrap();
     assert_eq!(original_hash_file3, &moved_hash_file3);
+
+    remove_dirs(&[setup.source_dir, setup.dest_dir]);
 }

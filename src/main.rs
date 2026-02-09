@@ -4,9 +4,7 @@ use std::{
 };
 
 mod file_handling;
-use file_handling::{
-    create_files_from_input_globs, get_files_to_move_and_destination, handle_file_movement,
-};
+use file_handling::{create_files_from_input_globs, get_files_to_move_and_destination, handle_file_movement,};
 
 mod args_parse;
 use args_parse::{ArgsParseError, CLIArgs};
