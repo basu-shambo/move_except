@@ -1,5 +1,6 @@
 use glob::glob;
 use std::{ borrow::Cow, env, path::{Path, PathBuf}, collections::HashSet};
+use std::ffi::OsStr;
 
 use crate::logging::{Logger, Level};
 
@@ -63,9 +64,18 @@ pub fn create_files_from_input_globs(input_globs: Vec<String>) -> Vec<PathBuf> {
 
 pub fn move_listed_files(files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
     for file in files_to_move {
-        match std::fs::rename(&file, &destination) {
+        assert!(destination.is_dir(), "This has to be a directory to work correctly ");
+          
+        let file_name_opt : Option<&OsStr> = file.file_name();
+        if file_name_opt.is_none() {
+            Logger::with_stdout(log_level).warn(&format!("Ignoring {}, as this can't be moved",file.display()));
+            continue;
+        }
+        let dest_file_path = destination.join(file_name_opt.unwrap());
+        let abs_destination_path = dest_file_path.to_absolute_path();
+        match std::fs::rename(&file, &abs_destination_path) {
             Ok(_) => {
-                Logger::with_stdout(log_level).debug(&format!("Moving file {} -> {}",file.display(), destination.display())).log();
+                Logger::with_stdout(log_level).debug(&format!("Moving file {} -> {}",file.display(), abs_destination_path.display())).log();
 
             }
             Err(e) => {
@@ -78,7 +88,7 @@ pub fn move_listed_files(files_to_move: Vec<PathBuf>, destination: PathBuf, log_
 pub fn get_files_to_move_and_destination(files_to_move: Vec<PathBuf>, files_to_exclude: Vec<PathBuf>, destination: String) -> (Vec<PathBuf>, PathBuf) {
     let absolute_paths_to_move = files_to_move.into_iter().map(|s| s.to_absolute_path().into_owned());
 
-    let exclusion_set: HashSet<PathBuf> =files_to_exclude.into_iter().map(|s| s.to_absolute_path().into_owned()).collect();
+    let exclusion_set: HashSet<PathBuf> = files_to_exclude.into_iter().map(|s| s.to_absolute_path().into_owned()).collect();
 
     let filtered_absolute_paths_to_move: Vec<PathBuf> = absolute_paths_to_move.into_iter().filter(|b| !exclusion_set.contains(b)).collect();
 
@@ -87,8 +97,16 @@ pub fn get_files_to_move_and_destination(files_to_move: Vec<PathBuf>, files_to_e
 }
 
 pub fn handle_file_movement( files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
+    //Check once that the destination doesn't exists or it exists and is a directory
+    let is_dest_dir : bool = destination.is_dir();
+    if destination.exists() && !is_dest_dir {
+        Logger::with_stdout(log_level).error("{} is not a directory, and can't be used to move into").log();
+    }
+    // We know at this point that either the 'destination doesn't exist or its definitily a directory
+
+
     //Check if the destination exists otherwise make the directory
-    match destination.is_dir() {
+    match is_dest_dir {
         false => match std::fs::create_dir(&destination) {
             Ok(_) => {
                 Logger::with_stdout(log_level).info(&format!("{} Created!",destination.display())).log();

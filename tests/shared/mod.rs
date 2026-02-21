@@ -1,6 +1,8 @@
 use std::fs::{File, create_dir, create_dir_all, remove_dir_all};
 use std::path::{Path, PathBuf};
 use std::io;
+use std::env;
+
 use sha2::{Digest, Sha256};
 pub struct TestSetup {
     pub source_dir: PathBuf,
@@ -24,6 +26,20 @@ pub fn remove_dirs(dirs: &[impl AsRef<Path>]) {
     let _ = dirs.iter().map(|e| remove_dir_all(e));
 }
 
+pub fn validate_setup(test_setup: &io::Result<TestSetup>) {
+    if let Ok(TestSetup { source_dir, dest_dir, files }) = test_setup {
+        assert!(source_dir.exists());
+        assert!(dest_dir.exists());
+        for file in files {
+            assert!(file.0.exists());
+        }
+        //Also assert that the current directory is the source directory from the 
+        assert!(env::current_dir().unwrap() == *source_dir);
+    } else {
+        panic!("Test setup failed");
+    }
+}
+
 pub fn create_simple_test_setup<StrType: AsRef<str>>(input_files:Vec<StrType>) -> io::Result<TestSetup> {
     let source_path_name: String = "source".to_string();
     let dest_path_name: String = "dest".to_string();
@@ -32,7 +48,10 @@ pub fn create_simple_test_setup<StrType: AsRef<str>>(input_files:Vec<StrType>) -
 
 }
 
-
+fn change_dir_to(to_path:&PathBuf)  {
+        let changed_dir = env::set_current_dir(to_path);
+        assert!(changed_dir.is_ok());
+}
 pub fn create_test_setup<StrType: AsRef<str>>(mut source_path_name: String, mut dest_path_name: String, input_files:Vec<StrType>) -> io::Result<TestSetup> {
     let mut temp_paths = create_source_dest(&source_path_name, &dest_path_name);
     if temp_paths.is_err() {
@@ -70,7 +89,7 @@ pub fn create_test_setup<StrType: AsRef<str>>(mut source_path_name: String, mut 
             }
         } 
     }
-    
+    change_dir_to(&source_dir); 
     return Ok(TestSetup {
         source_dir : source_dir,
         dest_dir : dest_dir,

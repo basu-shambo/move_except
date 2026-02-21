@@ -88,7 +88,7 @@ pub fn get_help_str() -> &'static str {
     move_except - Move or copy files with optional exclusions
 
     USAGE:
-        mve [options] <files_to_move> <destination> [-e, --exclude <files_or_folders_to_exclude>]
+        mve [options] <files_to_move> <destination_dir> [-e, --exclude <files_or_folders_to_exclude>]
 
     OPTIONS:
         -c, --copy        Copy files instead of moving them

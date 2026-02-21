@@ -144,7 +144,6 @@ dependencies = [
  "glob",
  "predicates",
  "sha2",
- "tempdir_util",
 ]
 
 [[package]]
@@ -289,10 +288,6 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
-
-[[package]]
-name = "tempdir_util"
-version = "0.1.0"
 
 [[package]]
 name = "termtree"
