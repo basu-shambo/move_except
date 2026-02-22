@@ -30,13 +30,17 @@ fn main() {
     }
 
 
-    let parsed_args: CLIArgs = args_rep.unwrap();
-    program_print_level = parsed_args.verbosity;
 
-    let destination: String = parsed_args.destination;
-    let globbed_files_to_move: Vec<String> = parsed_args.files_to_move;
-    let optional_globbed_files_to_exclude: Option<Vec<String>> = parsed_args.files_to_exclude;
+    let CLIArgs {
+        copy_instead, 
+        verbosity, 
+        destination, 
+        files_to_move: globbed_files_to_move,
+        files_to_exclude: optional_globbed_files_to_exclude,
+        ..
+    } = args_rep.unwrap();
 
+    program_print_level = verbosity;
     let files_to_move: Vec<PathBuf> = create_files_from_input_globs(globbed_files_to_move.clone());
     let files_to_exclude: Vec<PathBuf> = match optional_globbed_files_to_exclude {
         Some(globbed_files_to_exclude) if !globbed_files_to_exclude.is_empty() => {
@@ -47,5 +51,5 @@ fn main() {
 
     let (files_to_move, destination_path): (Vec<PathBuf>, PathBuf) = get_files_to_move_and_destination(files_to_move, files_to_exclude, destination);
     
-    handle_file_movement(files_to_move, destination_path, program_print_level);
+    handle_file_movement(files_to_move, destination_path, program_print_level, copy_instead);
 }

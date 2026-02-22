@@ -34,7 +34,7 @@ pub fn validate_setup(test_setup: &io::Result<TestSetup>) {
             assert!(file.0.exists());
         }
         //Also assert that the current directory is the source directory from the 
-        assert!(env::current_dir().unwrap() == *source_dir);
+        assert!(env::current_dir().unwrap() == *source_dir, "{} , {}", env::current_dir().unwrap().display(), source_dir.display());
     } else {
         panic!("Test setup failed");
     }
@@ -56,11 +56,13 @@ pub fn create_test_setup<StrType: AsRef<str>>(mut source_path_name: String, mut 
     let mut temp_paths = create_source_dest(&source_path_name, &dest_path_name);
     if temp_paths.is_err() {
         let mut post_num = 1;
+        let mut extended_source_path_name : String = source_path_name.clone();
+        let mut extended_dest_path_name : String = dest_path_name.clone();
         while temp_paths.is_err() && post_num < 100 {
-            source_path_name = format!("{}_{}", source_path_name, post_num);
-            dest_path_name = format!("{}_{}", dest_path_name, post_num);
+            extended_source_path_name = format!("{}_{}", &source_path_name, post_num);
+            extended_dest_path_name = format!("{}_{}", &dest_path_name, post_num);
             post_num += 1;
-            temp_paths = create_source_dest(&source_path_name, &dest_path_name);
+            temp_paths = create_source_dest(&extended_source_path_name, &extended_dest_path_name);
         }
     }
 

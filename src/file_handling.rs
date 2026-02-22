@@ -1,5 +1,7 @@
 use glob::glob;
 use std::{ borrow::Cow, env, path::{Path, PathBuf}, collections::HashSet};
+use std::fs;
+use std::io;
 use std::ffi::OsStr;
 
 use crate::logging::{Logger, Level};
@@ -62,7 +64,16 @@ pub fn create_files_from_input_globs(input_globs: Vec<String>) -> Vec<PathBuf> {
     return paths_from_globs;
 }
 
-pub fn move_listed_files(files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
+fn do_actual_transfer(file: &PathBuf, destination: &Path, copy_instead: bool ) -> Result<(), io::Error> {
+    if copy_instead {
+        return fs::copy(file, destination).map(|_| ());
+    }
+    else {
+        return fs::rename(file,destination);
+    }
+}
+
+pub fn handle_file_movement_core(files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level, copy_instead:bool) {
     for file in files_to_move {
         assert!(destination.is_dir(), "This has to be a directory to work correctly ");
           
@@ -73,13 +84,14 @@ pub fn move_listed_files(files_to_move: Vec<PathBuf>, destination: PathBuf, log_
         }
         let dest_file_path = destination.join(file_name_opt.unwrap());
         let abs_destination_path = dest_file_path.to_absolute_path();
-        match std::fs::rename(&file, &abs_destination_path) {
+        let logging_terms = if copy_instead {("Copied", "copying")} else {("Moved", "moving")} ;
+        match do_actual_transfer(&file, &abs_destination_path, copy_instead) {
             Ok(_) => {
-                Logger::with_stdout(log_level).debug(&format!("Moving file {} -> {}",file.display(), abs_destination_path.display())).log();
+                Logger::with_stdout(log_level).debug(&format!("{} file {} -> {}",logging_terms.0, file.display(), abs_destination_path.display())).log();
 
             }
             Err(e) => {
-                Logger::with_stdout(log_level).error(&format!("Error moving {}. {}", file.display(), e)).log();
+                Logger::with_stdout(log_level).error(&format!("Error {} {}. {}", logging_terms.1, file.display(), e)).log();
             }
         }
     }
@@ -96,7 +108,7 @@ pub fn get_files_to_move_and_destination(files_to_move: Vec<PathBuf>, files_to_e
     return (filtered_absolute_paths_to_move, absolute_dest_path);
 }
 
-pub fn handle_file_movement( files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level) {
+pub fn handle_file_movement( files_to_move: Vec<PathBuf>, destination: PathBuf, log_level: Level, copy_instead: bool) {
     //Check once that the destination doesn't exists or it exists and is a directory
     let is_dest_dir : bool = destination.is_dir();
     if destination.exists() && !is_dest_dir {
@@ -121,6 +133,6 @@ pub fn handle_file_movement( files_to_move: Vec<PathBuf>, destination: PathBuf, 
         }
     };
     
-    move_listed_files(files_to_move, destination, log_level);
+    handle_file_movement_core(files_to_move, destination, log_level, copy_instead);
 
 }
