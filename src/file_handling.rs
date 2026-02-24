@@ -32,36 +32,18 @@ impl ToAbsolutePath for &PathBuf {
     }
 }
 
-fn get_files_from_glob(glob_str: &str, excluded_path: Option<&Vec<PathBuf>>) -> Vec<PathBuf> {
-    let vec = if let Some(excluded_path) = excluded_path {
-        glob(glob_str)
-            .expect("Failed to read glob pattern")
-            .filter_map(|e| {
-                e.ok().and_then(|pathbuf| {
-                    if pathbuf.to_absolute_path() == excluded_path[0].to_absolute_path() {
-                        None
-                    } else {
-                        Some(pathbuf)
-                    }
-                })
-            })
-            .collect()
-    } else {
-        glob(glob_str)
-            .expect("Failed to read glob pattern")
-            .filter_map(Result::ok)
-            .collect()
-    };
-    return vec;
+fn get_files_from_glob(glob_str: &str) -> Vec<PathBuf> {
+    glob(glob_str)
+        .expect("Failed to read glob pattern")
+        .filter_map(Result::ok)
+        .collect()
 }
 
 pub fn create_files_from_input_globs(input_globs: Vec<String>) -> Vec<PathBuf> {
-    let paths_from_globs: Vec<PathBuf> = input_globs
+    input_globs
         .into_iter()
-        .flat_map(|s| get_files_from_glob(&s, None))
-        .collect();
-
-    return paths_from_globs;
+        .flat_map(|s| get_files_from_glob(&s))
+        .collect()
 }
 
 fn do_actual_transfer(file: &PathBuf, destination: &Path, copy_instead: bool ) -> Result<(), io::Error> {
